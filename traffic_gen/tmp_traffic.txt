@@ -1,0 +1,27 @@
+26 
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1001 -c 1500 -C 1000000 -t 10000 -d 213 -k 1573 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1002 -c 1500 -C 1000000 -t 10000 -d 360 -k 13 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1003 -c 1500 -C 1000000 -t 10000 -d 707 -k 18 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1004 -c 1500 -C 1000000 -t 10000 -d 1091 -k 6 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1005 -c 1500 -C 1000000 -t 10000 -d 1184 -k 1423 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1006 -c 1500 -C 1000000 -t 10000 -d 1490 -k 7490 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1007 -c 1500 -C 1000000 -t 10000 -d 1821 -k 9846 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1008 -c 1500 -C 1000000 -t 10000 -d 1859 -k 672 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1009 -c 1500 -C 1000000 -t 10000 -d 1990 -k 16579 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1010 -c 1500 -C 1000000 -t 10000 -d 2018 -k 948 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1011 -c 1500 -C 1000000 -t 10000 -d 2273 -k 1 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1012 -c 1500 -C 1000000 -t 10000 -d 2275 -k 23911 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1013 -c 1500 -C 1000000 -t 10000 -d 2375 -k 53 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1014 -c 1500 -C 1000000 -t 10000 -d 2514 -k 317 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1015 -c 1500 -C 1000000 -t 10000 -d 3036 -k 26531 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1016 -c 1500 -C 1000000 -t 10000 -d 3244 -k 759 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1017 -c 1500 -C 1000000 -t 10000 -d 3259 -k 1498 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1018 -c 1500 -C 1000000 -t 10000 -d 3310 -k 15261 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1019 -c 1500 -C 1000000 -t 10000 -d 3472 -k 17018 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1020 -c 1500 -C 1000000 -t 10000 -d 3482 -k 27122 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1021 -c 1500 -C 1000000 -t 10000 -d 3523 -k 6223 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1022 -c 1500 -C 1000000 -t 10000 -d 3655 -k 5514 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1023 -c 1500 -C 1000000 -t 10000 -d 3915 -k 25920 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1024 -c 1500 -C 1000000 -t 10000 -d 4078 -k 107 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1025 -c 1500 -C 1000000 -t 10000 -d 4184 -k 5533 &
+sudo ./ITGSend -T TCP -a 192.168.2.6 -rp 1026 -c 1500 -C 1000000 -t 10000 -d 4463 -k 2060 &
