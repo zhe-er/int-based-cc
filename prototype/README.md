@@ -1,7 +1,7 @@
-# doc
+## doc
 This document shows the setup of prototype environments.
 
-# define_option_stack
+## define_option_stack
 The kernel code in the Linux network stack.
 
 ## modify_option
