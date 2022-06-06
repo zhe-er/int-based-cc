@@ -8,5 +8,5 @@ This folder includes code and scripts for analysis.
 `trace_reader` is used to parse the .tr files output by the simulation.
 
 ### Usage: 
-1. `make trace_reader`
+`make trace_reader`
 
