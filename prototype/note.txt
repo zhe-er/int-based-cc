@@ -1,0 +1,261 @@
+diff --include/net/netns/ipv4.h  server1 and server3
+struct netns_ipv4 {
+ 	struct local_ports ip_local_ports;
+ 
+ 	int sysctl_tcp_ecn;
++	int sysctl_tcp_qlen;
+ 	int sysctl_ip_no_pmtu_disc;
+ 	int sysctl_ip_fwd_use_pmtu;
+ 	int sysctl_ip_nonlocal_bind;
+
+
+//添加函数读取options server1
+diff --include/net/tcp.h  
+struct tcp_congestion_ops{
++	void (*set_options)(u32 opt1, u32 opt2, u32 opt3);
+}
+
+//添加新option server1 and server3
+void tcp_time_wait(struct sock *sk, int state, int timeo);
+ #define TCPOPT_WINDOW		3	/* Window scaling */
+ #define TCPOPT_SACK_PERM        4       /* SACK Permitted */
+ #define TCPOPT_SACK             5       /* SACK Block */
++#define TCPOPT_QLEN				10		
+ #define TCPOPT_TIMESTAMP	8	/* Better RTT estimations/PAWS */
+ #define TCPOPT_MD5SIG		19	/* MD5 Signature (RFC2385) */
+ #define TCPOPT_EXP		254	/* Experimental */
+@@ -189,6 +190,7 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
+ #define TCPOLEN_TIMESTAMP      10
+ #define TCPOLEN_MD5SIG         18
+ #define TCPOLEN_EXP_FASTOPEN_BASE  4
++#define TCPOLEN_QLEN				    14//这个才是实际的选项的大小，下面那个大小是为了对齐
+
+ 
+ /* But this is what stacks really send out. */  server1 and server3
+ #define TCPOLEN_TSTAMP_ALIGNED		12
+@@ -199,6 +201,7 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
+ #define TCPOLEN_SACK_PERBLOCK		8
+ #define TCPOLEN_MD5SIG_ALIGNED		20
+ #define TCPOLEN_MSS_ALIGNED		4
++#define TCPOLEN_QLEN_ALIGNED			16//虽然我们设计的这个选项大小为6，但是这里并不是选项大小，而是对齐之后的大小
+
+
+
+diff --include/linux/tcp.h  server1
+ struct tcp_options_received 
++u32 qlen;
++u32 timedelta;
++u32 txbytes;
+
+
+
+diff --net/ipv4/sysctl_net_ipv4.c  server1 and server3
+static struct ctl_table ipv4_net_table[] = {
+ 		.proc_handler	= proc_dointvec
+ 	},
++ 	{
++		.procname	= "tcp_qlen",
++		.data		= &init_net.ipv4.sysctl_tcp_qlen,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+	{
+ 		.procname	= "ip_local_port_range",
+ 		.maxlen		= sizeof(init_net.ipv4.ip_local_ports.range),
+ 		.data		= &init_net.ipv4.ip_local_ports.range,
+
+
+
+
+diff --net/ipv4/tcp_ipv4.c  server1 and server3
+static int __net_init tcp_sk_init(struct net *net)
+ 		*per_cpu_ptr(net->ipv4.tcp_sk, cpu) = sk;
+ 	}
+ 	net->ipv4.sysctl_tcp_ecn = 2;
++	net->ipv4.sysctl_tcp_qlen = 0;
+ 	return 0;
+ 
+
+
+diff --net/ipv4/tcp_output.c  server1 and server3
+static inline bool tcp_urg_mode(const struct tcp_sock *tp)
+ #define OPTION_TS		(1 << 1)
+ #define OPTION_MD5		(1 << 2)
+ #define OPTION_WSCALE		(1 << 3)
+//这个标志是为了做实验用的，目的是让所有的TCP包把当前的
+//发送窗口通过TCP options发送出去，这样中间网络设备可以得知
+//源点的发送窗口，从而在发生拥塞的时候方便抑制源点
++#define OPTION_QLEN			(1<<4)
+ #define OPTION_FAST_OPEN_COOKIE	(1 << 8)
+ 
+struct tcp_out_options {
+ 	u8 ws;			/* window scale, 0 to disable */
+ 	u8 num_sack_blocks;	/* number of SACK blocks to include */
+ 	u8 hash_size;		/* bytes in hash_location */
++	u32 qlen;
++	u32 timedelta;
++	u32 txbytes;
+ 	__u8 *hash_location;	/* temporary pointer, overloaded */
+ 	__u32 tsval, tsecr;	/* need to include OPTION_TS */
+ 	struct tcp_fastopen_cookie *fastopen_cookie;	/* Fast open cookie */
+
+static void tcp_options_write(__be32 *ptr, struct tcp_sock *tp,
+ 			       struct tcp_out_options *opts){
++if(likely(OPTION_QLEN & options)){
++		*ptr++ = htonl((TCPOPT_NOP << 24) |
++				       (TCPOPT_NOP << 16) |
++				       (TCPOPT_QLEN << 8) |
++				       (TCPOLEN_QLEN));
++		*ptr++ = htonl(opts->qlen);
++		*ptr++ = htonl(opts->timedelta);
++		*ptr++ = htonl(opts->txbytes);
++	}
+
+
+ 	if (unlikely(opts->num_sack_blocks)) {
+ 		struct tcp_sack_block *sp = tp->rx_opt.dsack ?
+ 			tp->duplicate_sack : tp->selective_acks;
+@@ -533,6 +547,7 @@ static void tcp_options_write(__be32 *ptr, struct tcp_sock *tp,
+ 		}
+ 		ptr += (foc->len + 3) >> 2;
+ 	}
+ }
+ 
+static unsigned int tcp_established_options(struct sock *sk, struct sk_buff *skb
+ 			opts->num_sack_blocks * TCPOLEN_SACK_PERBLOCK）{
+	//注意这个函数是给已经建立起来连接的包设置options的
++	if(sock_net(sk)->ipv4.sysctl_tcp_qlen==1){
++			opts->options|=OPTION_QLEN;
++			opts->qlen=tp->snd_cwnd;
++			opts->timedelta=tp->snd_cwnd;
++			opts->txbytes=tp->snd_cwnd;
++			size += TCPOLEN_QLEN_ALIGNED;
++		}
+
+ 	return size;
+ }
+
+
+
+diff --net/ipv4/tcp_input.c  server1
+tcp_parse_options(const struct net *net,
+		       const struct sk_buff *skb,
+		       struct tcp_options_received *opt_rx, int estab,
+		       struct tcp_fastopen_cookie *foc)
++case TCPOPT_QLEN:
++				if ((opsize == TCPOLEN_QLEN) &&
++					(net->ipv4.sysctl_tcp_qlen)) {
++						opt_rx->qlen = get_unaligned_be32(ptr);
++						opt_rx->timedelta = get_unaligned_be32(ptr+4);
++						opt_rx->txbytes = get_unaligned_be32(ptr+8);
++						pri_qlen = opt_rx->qlen;
++						pri_timedelta = opt_rx->timedelta;
++						pri_txbytes = opt_rx->txbytes;
++						cur_qlen = opt_rx->qlen;
++						cur_timedelta = opt_rx->timedelta;
++						cur_txbytes = opt_rx->txbytes;
++						u32 now = tcp_jiffies32;
++						cur_timedelta = jiffies_to_usecs(now);
++				}
++				break;
+
+
+
+
+//set options in congestion control algorithms
+static void tcp_cong_avoid(struct sock *sk, u32 ack, u32 acked){
++	icsk->icsk_ca_ops->set_options(cur_qlen, cur_timedelta, cur_txbytes);
+}
+
+
+
+diff --net/ipv4/tcp_cong.c server1 //include all used congestion control algorithms
++static u32 pri_qlen = 0;
++static u32 pri_timedelta = 0;
++static u32 pri_txbytes = 0;
++static u32 cur_qlen = 0;
++static u32 cur_timedelta = 0;
++static u32 cur_txbytes = 0;
++static u32 m_curRate = 0;
++static u32 abs_u = 0;
++static u32 rel_u = 0;
++static u32 inc_stage = 0;
+
++#define MUL 1000000000 //to multiple the float variables
++#define HOP_BW 2 //2G
++#define TARGET_UTIL 950 //0.95
++#define INC_STAGE 5
++#define M_RAI 1 //1 pkg
++#define MIN_CWND 10 //10pkgs
++#define MAX_CWND 10000 //1000pkgs
+
++void tcp_reno_set_options(u32 opt1, u32 opt2, u32 opt3)
++{
++
++    u32 tmp1 = pri_qlen;
++    u32 tmp2 = pri_timedelta;
++    u32 tmp3 = pri_txbytes;
++
++    pri_qlen = cur_qlen;
++    pri_timedelta = cur_timedelta;
++    pri_txbytes = cur_txbytes;
++    cur_qlen = opt1;
++    cur_timedelta = opt2;
++    cur_txbytes = opt3;
+
++    if(cur_timedelta == pri_timedelta || cur_txbytes==pri_txbytes)
++    {
++        pri_qlen = tmp1;
++        pri_timedelta = tmp2;
++        pri_txbytes = tmp3;
++    }
+
++    if(cur_timedelta!=pri_timedelta)
++    {
++        m_curRate = (cur_txbytes-pri_txbytes)*12*1000000000/(cur_timedelta-pri_timedelta);  //bit/s
++        abs_u = m_curRate / HOP_BW;  //u
++        rel_u = 1000 * abs_u / TARGET_UTIL;
++    }
++}
+
+struct tcp_congestion_ops tcp_reno = {
++	.set_options = tcp_reno_set_options,
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*..............................以下为失败尝试...........................*/
+//为了在tcp_ack中能走到cong_control这一步
+tcp_ack{
+-	if (!prior_packets)
+-		goto no_queue;
+}
+
+//为了cong_control能调用实际的拥塞控制算法
+tcp_cong_control{
+-	else if (tcp_may_raise_cwnd(sk, flag)) 
++	else
+}
+
+//为了拥塞控制算法中能走到慢启动和拥塞避免
+diff --net/ipv4/tcp_cong.c
+tcp_reno_cong_avoid(struct sock *sk, u32 ack, u32 acked){
+-	if (!tcp_is_cwnd_limited(sk))
+-		printk(KERN_INFO "tcp_is_cwnd_limited\n");
+-		return;
+}
+
+
